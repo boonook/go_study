@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/360EntSecGroup-Skylar/excelize"
 	"github.com/huichen/pinyin"
 )
 
@@ -76,6 +77,28 @@ func Response() {
 	result := strings.Replace(string(test), "\n", "", 1)
 	fmt.Println("test_string", result)
 	WriteFile("data/test.txt")
+	readExcel("data/boonook.xlsx")
+	_dir := "logs/boonook.xlsx"
+	exist, err := isFileExist(_dir)
+	if err != nil {
+		fmt.Printf("get dir error![%v]\n", err)
+		return
+	}
+	if exist {
+		fmt.Printf("has dir![%v]\n", _dir)
+	} else {
+		fmt.Printf("--------------------vv--------")
+		fmt.Printf("no dir![%v]\n", _dir)
+		// 创建文件夹
+		err := os.Mkdir(_dir, os.ModePerm)
+		if err != nil {
+			fmt.Printf("mkdir failed![%v]\n", err)
+		} else {
+			fmt.Printf("mkdir success!\n")
+		}
+	}
+	file_name := "logs/a.txt"
+	CreateFile(file_name)
 }
 
 ////数组去重
@@ -121,4 +144,53 @@ func WriteFile(fileName string) {
 		_, err = f.WriteAt([]byte(content), n)
 	}
 	defer f.Close()
+}
+
+/////读取excel
+func readExcel(fileName string) {
+	xlsx, err := excelize.OpenFile(fileName)
+	if err != nil {
+		fmt.Println("open excel error,", err.Error())
+		os.Exit(1)
+	}
+	// rows, err := xlsx.GetRows(xlsx.GetSheetName(xlsx.GetActiveSheetIndex()))
+	cell := xlsx.GetCellValue("Sheet1", "B2")
+	fmt.Println(cell)
+	rows := xlsx.GetRows("Sheet1")
+	for _, row := range rows {
+		for _, colCell := range row {
+			fmt.Print(colCell, "\t")
+		}
+		fmt.Println("row", row)
+	}
+}
+
+////判断文件是否存在
+func isFileExist(path string) (bool, error) {
+	fileInfo, err := os.Stat(path)
+
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	//我这里判断了如果是0也算不存在
+	if fileInfo.Size() == 0 {
+		return false, nil
+	}
+	if err == nil {
+		return true, nil
+	}
+	return false, err
+}
+
+/////创建文件
+func CreateFile(file_name string) {
+	//创建文件
+	f, err := os.Create(file_name)
+	//判断是否出错
+	if err != nil {
+		fmt.Println(err)
+	}
+	//打印文件名称
+	fmt.Println(f.Name())
+	// 　　 defer f.close()
 }
