@@ -3,12 +3,12 @@ package response
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/360EntSecGroup-Skylar/excelize"
+	"github.com/huichen/pinyin"
 	"io/ioutil"
 	"os"
 	"strings"
-
-	"github.com/360EntSecGroup-Skylar/excelize"
-	"github.com/huichen/pinyin"
+	"time"
 )
 
 func Response() {
@@ -76,29 +76,14 @@ func Response() {
 	test, err := ReadAll("data/test.txt")
 	result := strings.Replace(string(test), "\n", "", 1)
 	fmt.Println("test_string", result)
-	WriteFile("data/test.txt")
 	readExcel("data/boonook.xlsx")
-	_dir := "logs/boonook.xlsx"
-	exist, err := isFileExist(_dir)
-	if err != nil {
-		fmt.Printf("get dir error![%v]\n", err)
-		return
-	}
-	if exist {
-		fmt.Printf("has dir![%v]\n", _dir)
-	} else {
-		fmt.Printf("--------------------vv--------")
-		fmt.Printf("no dir![%v]\n", _dir)
-		// 创建文件夹
-		err := os.Mkdir(_dir, os.ModePerm)
-		if err != nil {
-			fmt.Printf("mkdir failed![%v]\n", err)
-		} else {
-			fmt.Printf("mkdir success!\n")
-		}
-	}
-	file_name := "logs/a.txt"
+	t := time.Now()
+	////时间转换
+	nowTime := t.Format("2006-01-02")
+	file_name := "logs/" + nowTime + ".log"
 	CreateFile(file_name)
+	files()
+	timeDaXiao()
 }
 
 ////数组去重
@@ -129,13 +114,14 @@ func ReadAll(filePth string) ([]byte, error) {
 }
 
 /////将内容写入到文件中去
-func WriteFile(fileName string) {
+func WriteFile(fileName string, content string) {
+	fmt.Println("content----------", content)
 	f, err := os.OpenFile(fileName, os.O_WRONLY, 0644)
 	if err != nil {
 		// 打开文件失败处理
 
 	} else {
-		content := "写入的文件内容\n"
+		content := content + "\n"
 
 		// 查找文件末尾的偏移量
 		n, _ := f.Seek(0, 2)
@@ -146,7 +132,10 @@ func WriteFile(fileName string) {
 	defer f.Close()
 }
 
-/////读取excel
+/**
+	读取excel
+	param fileName{string} ///文件路径
+**/
 func readExcel(fileName string) {
 	xlsx, err := excelize.OpenFile(fileName)
 	if err != nil {
@@ -165,32 +154,139 @@ func readExcel(fileName string) {
 	}
 }
 
-////判断文件是否存在
+/***
+	////判断文件是否存在
+	param path{string}  ///文件路径
+***/
 func isFileExist(path string) (bool, error) {
-	fileInfo, err := os.Stat(path)
-
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	//我这里判断了如果是0也算不存在
-	if fileInfo.Size() == 0 {
-		return false, nil
-	}
+	_, err := os.Stat(path)
 	if err == nil {
 		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
 	}
 	return false, err
 }
 
-/////创建文件
+/***
+	创建文件
+	param path{string}  ///文件路径
+***/
 func CreateFile(file_name string) {
 	//创建文件
-	f, err := os.Create(file_name)
-	//判断是否出错
+	_dir := file_name
+	exist, err := isFileExist(_dir)
+	t := time.Now()
+	////时间转换
+	nowTime := t.Format("2006-01-02 15:04:05")
+	fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
 	if err != nil {
-		fmt.Println(err)
+		////获取文件信息失败
+		fmt.Printf("get dir error![%v]\n", err)
+		return
 	}
-	//打印文件名称
-	fmt.Println(f.Name())
-	// 　　 defer f.close()
+	if exist {
+		////文件已经存在，无法创建文件
+		fmt.Printf("has dir![%v]\n", _dir)
+		WriteFile(file_name, nowTime+" [succ] 111111111111111")
+	} else {
+		////文件不存在我们可以创建文件了
+		f, err := os.Create(file_name)
+		//判断是否出错
+		if err != nil {
+			fmt.Println(err)
+		}
+		//打印文件名称
+		fmt.Println(f.Name())
+		WriteFile(file_name, nowTime+" [succ] 111111111111111")
+		// 　　 defer f.close()
+	}
 }
+
+////获取目录下的所有文件并进行截取，同时获取十五天以内的文件
+func files() {
+	files, err := ioutil.ReadDir(`logs/`)
+	if err != nil {
+		panic(err)
+	}
+	// 获取文件，并输出它们的名字
+	// 保留15天以内的文件
+	for _, file := range files {
+		println(file.Name())
+		////对文件名进行截取
+		s := strings.Split(file.Name(), ".")[0]
+		// fmt.Println("s-----------", s)
+		///当前时间的前15天
+		d, _ := time.ParseDuration("-360h")
+		format := "2006-01-02 15:04:05"
+		now := time.Now()
+		d1 := now.Add(d).Format("2006-01-02 15:04:05")
+		_today := now.Format(format)
+		////获取15天之前的日期
+		fmt.Println("d1----------", _today)
+		// a, _ := time.Parse(s, "2019-03-10 11:00:00")
+		fmt.Println("a----------", d1)
+		stringTime := s
+		loc, _ := time.LoadLocation("Local")
+		the_time, err := time.ParseInLocation("2006-01-02", stringTime, loc)
+		if err == nil {
+			unix_time := the_time.Unix()                        //1504082441
+			timeNow := time.Unix(unix_time, 0)                  //2017-08-30 16:19:19 +0800 CST
+			unix_time2 := timeNow.Format("2006-01-02 15:04:05") //2015-06-15 08:52:32
+			fmt.Println("----------------------------------", unix_time2)
+			///文件名对应的时刻
+			fileTime, _ := time.Parse(format, unix_time2)
+			////当前时间的前15天的时刻
+			a, _ := time.Parse(format, d1)
+			status := fileTime.Before(a)
+			if status {
+				////说明文件名对应的时间不在15天以内
+				fmt.Println("now  aaaaa---------   After: ", status)
+				err := os.Remove("logs/" + file.Name())
+				if err != nil {
+					t := time.Now()
+					////时间转换
+					nowTime := t.Format("2006-01-02")
+					file_name := "logs/" + nowTime + ".log"
+					WriteFile(file_name, nowTime+" [erro]"+err.Error())
+				} else {
+					fmt.Println("now  success---------: ", "文件删除成功")
+					t := time.Now()
+					////时间转换
+					nowTime := t.Format("2006-01-02")
+					file_name := "logs/" + nowTime + ".log"
+					newDateTime := t.Format(format)
+					WriteFile(file_name, newDateTime+" [succ] 文件删除成功"+file_name)
+				}
+			} else {
+				////说明文件名对应的时间在15天以内
+				fmt.Println("now  a   Before: ", status)
+
+			}
+		}
+
+		// d2, _ := time.Parse(d1, "2019-03-10 11:00:00")
+	}
+}
+
+func timeDaXiao() {
+	format := "2006-01-02 15:04:05"
+	now := time.Now()
+	//now, _ := time.Parse(format, time.Now().Format(format))
+	a, _ := time.Parse(format, "2019-03-10 11:00:00")
+	b, _ := time.Parse(format, "2015-03-10 16:00:00")
+
+	fmt.Println("now:", now.Format(format), "\na:", a.Format(format), "\nb:", b.Format(format))
+	fmt.Println("---    a > now  >  b   -----------")
+	fmt.Println("now  a   After: ", now.After(a))
+	fmt.Println("now  a   Before:", now.Before(a))
+	fmt.Println("now  b   After:", now.After(b))
+	fmt.Println("now  b   Before:", now.Before(b))
+	fmt.Println("a  b   After:", a.After(b))
+	fmt.Println("a  b   Before:", a.Before(b))
+	fmt.Println(now.Format(format), a.Format(format), b.Format(format))
+	fmt.Println(now.Unix(), a.Unix(), b.Unix())
+}
+
+////将年月日2019-09-08转成2019-09-08 00:00:00

@@ -123,4 +123,8 @@ func main() {
 	api.ApiArr()
 	fmt.Println(api.Api2())
 	response.Response()
+	var data_get = api.Get("https://api.imjad.cn/cloudmusic/?type=song&id=28012031&br=128000")
+	fmt.Println("data--------", data_get)
+	api.GetToken()
+	api.Mysql()
 }
