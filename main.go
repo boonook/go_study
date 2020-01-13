@@ -127,4 +127,5 @@ func main() {
 	fmt.Println("data--------", data_get)
 	api.GetToken()
 	api.Mysql()
+	api.HandleArray()
 }
